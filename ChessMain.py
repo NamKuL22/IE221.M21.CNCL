@@ -24,10 +24,29 @@ def main():
     gs = ChessEngine.GameState()
     loadImages()
     running = True
+    sqSelected = () # lưu trữ ô cờ cuối mà người dùng chọn
+    playerClicks = [] # lưu trữ 2 ô cờ người dùng chọn
     while running:
         for e in pg.event.get():
             if e.type == pg.QUIT:
                 running = False
+            elif e.type == pg.MOUSEBUTTONDOWN:
+                location = pg.mouse.get_pos() #(x, y) vị trị của con trỏ chuột
+                col = location[0]//SQ_SIZE
+                row = location[1]//SQ_SIZE
+                if sqSelected == (row, col): # người dùng click vào 1 ô 2 lần
+                    sqSelected = ()
+                    playerClicks = [] # reset click của người dùng
+                else:
+                    sqSelected = (row, col)
+                    playerClicks.append(sqSelected)
+                if len(playerClicks) == 2: # khi chọn 2 ô khác nhau
+                    move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
+                    print(move.getChessNotation())
+                    gs.makeMove(move)
+                    sqSelected = () # reset click của người dùng
+                    playerClicks = []
+
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
         pg.display.flip()
