@@ -50,8 +50,10 @@ def main():
                     if move in validMoves:
                         gs.makeMove(move)
                         moveMade = True
-                    sqSelected = () # reset click của người dùng
-                    playerClicks = []
+                        sqSelected = () # reset click của người dùng
+                        playerClicks = []
+                    else:
+                        playerClicks = [sqSelected]
             #Thao tác bằng phím
             elif e.type == pg.KEYDOWN:
                 if e.key == pg.K_z: #Undo khi bấm Z
