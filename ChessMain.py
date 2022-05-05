@@ -1,3 +1,4 @@
+import pygame
 import pygame as pg
 from Chess import ChessEngine
 
@@ -22,6 +23,8 @@ def main():
     clock = pg.time.Clock()
     screen.fill(pg.Color("white"))
     gs = ChessEngine.GameState()
+    validMoves = gs.getValidMoves()
+    moveMade = False
     loadImages()
     running = True
     sqSelected = () # lưu trữ ô cờ cuối mà người dùng chọn
@@ -30,11 +33,12 @@ def main():
         for e in pg.event.get():
             if e.type == pg.QUIT:
                 running = False
+            #Thao tác bằng chuột
             elif e.type == pg.MOUSEBUTTONDOWN:
                 location = pg.mouse.get_pos() #(x, y) vị trị của con trỏ chuột
                 col = location[0]//SQ_SIZE
                 row = location[1]//SQ_SIZE
-                if sqSelected == (row, col): # người dùng click vào 1 ô 2 lần
+                if sqSelected == (row, col): #người dùng click vào 1 ô 2 lần
                     sqSelected = ()
                     playerClicks = [] # reset click của người dùng
                 else:
@@ -43,9 +47,20 @@ def main():
                 if len(playerClicks) == 2: # khi chọn 2 ô khác nhau
                     move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
                     print(move.getChessNotation())
-                    gs.makeMove(move)
+                    if move in validMoves:
+                        gs.makeMove(move)
+                        moveMade = True
                     sqSelected = () # reset click của người dùng
                     playerClicks = []
+            #Thao tác bằng phím
+            elif e.type == pg.KEYDOWN:
+                if e.key == pg.K_z: #Undo khi bấm Z
+                    gs.undoMove()
+                    moveMade = True
+
+        if moveMade:
+            validMoves = gs.getValidMoves()
+            moveMade = False
 
         drawGameState(screen, gs)
         clock.tick(MAX_FPS)
