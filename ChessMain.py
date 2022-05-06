@@ -47,12 +47,13 @@ def main():
                 if len(playerClicks) == 2: # khi chọn 2 ô khác nhau
                     move = ChessEngine.Move(playerClicks[0], playerClicks[1], gs.board)
                     print(move.getChessNotation())
-                    if move in validMoves:
-                        gs.makeMove(move)
-                        moveMade = True
-                        sqSelected = () # reset click của người dùng
-                        playerClicks = []
-                    else:
+                    for i in range(len(validMoves)):
+                        if move == validMoves[i]:
+                            gs.makeMove(validMoves[i])
+                            moveMade = True
+                            sqSelected = () # reset click của người dùng
+                            playerClicks = []
+                    if not moveMade:
                         playerClicks = [sqSelected]
             #Thao tác bằng phím
             elif e.type == pg.KEYDOWN:
