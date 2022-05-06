@@ -26,6 +26,7 @@ class GameState():
         self.blackKingLocation = (0, 4)
         self.checkMate = False
         self.staleMate = False
+        self.enpassantPossible = () #Điều kiện ô cờ để thực hiện bắt tốt qua đường
 
     """
     Đánh 1 nước cờ và thực thi (Không áp dụng cho Nhập thành, Phong tốt và Bắt tốt qua đường) 
@@ -44,6 +45,21 @@ class GameState():
         elif move.pieceMoved == "bK":
             self.blackKingLocation = (move.endRow, move.endCol)
 
+        #Phong tốt
+        if move.isPawnPromotion:
+            self.board[move.endRow][move.endCol] = move.pieceMoved[0] + 'Q'
+
+        #Bắt tốt qua đường
+        if move.isEnpassantMove:
+            self.board[move.startRow][move.endCol] = '--' #Bắt tốt
+
+        #cập nhật biến enpassantPossible:
+        if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2: #Chỉ khi tốt tiến 2 bước
+            self.enpassantPossible = ((move.startRow + move.endRow)//2, move.startCol)
+        else:
+            self.enpassantPossible = ()
+
+
     """
     Đánh lại nước cờ cuối (undo)
     """
@@ -52,19 +68,28 @@ class GameState():
         if len(self.moveLog) !=0:    #Kiểm tra xem đúng là 1 nước cờ có thể hoàn lại không
             move = self.moveLog.pop()
             self.board[move.startRow][move.startCol] = move.pieceMoved
-            self.board[move.endRow][move.endCol] = move.pieceCapture
+            self.board[move.endRow][move.endCol] = move.pieceCaptured
             self.whiteToMove = not self.whiteToMove #Đổi lại lượt
             # Cập nhật vị trí Vua khi cần
             if move.pieceMoved == "wK":
                 self.whiteKingLocation = (move.startRow, move.startCol)
             elif move.pieceMoved == "bK":
                 self.blackKingLocation = (move.startRow, move.startCol)
+            #undo bắt tốt qua đường
+            if move.isEnpassantMove:
+                self.board[move.endRow][move.endCol] = '--' #Rời ô trống đang đứng
+                self.board[move.startRow][move.endCol] = move.pieceCaptured
+                self.enpassantPossible = (move.endRow, move.endCol)
+            #undo tốt tiến 2 bước
+            if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
+                self.enpassantPossible = ()
 
     """
     Các nước đi hợp lệ
     """
 
     def getValidMoves(self):
+        tempEnpassantPossible = self.enpassantPossible
         #1. Generate tất cả các nước cờ hợp lệ
         moves = self.getAllPossibleMoves()
         #2. Với tùng nước cờ, thực thi chúng
@@ -85,10 +110,8 @@ class GameState():
                 self.checkMate = True
             else:
                 self.staleMate = True
-        else:
-            self.checkMate = False
-            self.staleMate = False
 
+        self.enpassantPossible = tempEnpassantPossible
         return moves
     """
     Xác định xem có đang bị chiếu tướng không
@@ -138,9 +161,14 @@ class GameState():
             if c-1 >= 0: #Ăn bên trái
                 if self.board[r - 1][c-1][0] == 'b': #Ăn cờ đối thủ
                     moves.append(Move((r, c), (r-1, c-1), self.board))
+                elif (r-1, c-1) == self.enpassantPossible:
+                    moves.append(Move((r, c), (r-1, c-1), self.board, isEnpassantMove=True))
+
             if c+1 <= 7: #Ăn bên phải
                 if self.board[r - 1][c+1][0] == 'b':
                     moves.append(Move((r, c), (r-1, c+1), self.board))
+                elif (r-1, c+1) == self.enpassantPossible:
+                    moves.append(Move((r, c), (r-1, c+1), self.board, isEnpassantMove=True))
         else: #Tốt đen moves
             if self.board[r+1][c] == "--": #Tiến 1 bước
                 moves.append(Move((r, c), (r+1, c), self.board))
@@ -150,9 +178,13 @@ class GameState():
             if c-1>=0: #Ăn trái
                 if self.board[r+1][c-1][0] == "w":
                     moves.append(Move((r, c), (r+1, c-1), self.board))
+                elif (r+1, c-1) == self.enpassantPossible:
+                    moves.append(Move((r, c), (r+1, c-1), self.board, isEnpassantMove=True))
             if c+1<=7: #Ăn phải
                 if self.board[r+1][c+1][0] == "w":
                     moves.append(Move((r, c), (r+1, c+1), self.board))
+                elif (r+1, c+1) == self.enpassantPossible:
+                    moves.append(Move((r, c), (r+1, c+1), self.board, isEnpassantMove=True))
 
         #Phong tốt
     """
@@ -244,13 +276,20 @@ class Move():
                    "e": 4, "f": 5, "g": 6, "h": 7}
     colsToFiles = {v: k for k, v in filesToCols.items()}
 
-    def __init__(self, startSq, endSq, board):
+    def __init__(self, startSq, endSq, board, isEnpassantMove=False):
         self.startRow = startSq[0]
         self.startCol = startSq[1]
         self.endRow = endSq[0]
         self.endCol = endSq[1]
         self.pieceMoved = board[self.startRow][self.startCol]
-        self.pieceCapture = board[self.endRow][self.endCol]
+        self.pieceCaptured = board[self.endRow][self.endCol]
+        #Phong tốt
+        self.isPawnPromotion = (self.pieceMoved == 'wp' and self.endRow == 0) or (self.pieceMoved == 'bp' and self.endRow == 7)
+        #Bắt tốt qua đường
+        self.isEnpassantMove = isEnpassantMove
+        if self.isEnpassantMove:
+            self.pieceCaptured = 'wp' if self.pieceMoved == 'bp' else 'bp'
+
         self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
     """
     Overriding equals method
