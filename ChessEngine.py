@@ -22,6 +22,10 @@ class GameState():
 
         self.whiteToMove = True
         self.moveLog = []
+        self.whiteKingLocation = (7, 4)
+        self.blackKingLocation = (0, 4)
+        self.checkMate = False
+        self.staleMate = False
 
     """
     Đánh 1 nước cờ và thực thi (Không áp dụng cho Nhập thành, Phong tốt và Bắt tốt qua đường) 
@@ -34,6 +38,11 @@ class GameState():
         self.board[move.endRow][move.endCol] = move.pieceMoved
         self.moveLog.append(move) # Lưu nước đi vào logMove
         self.whiteToMove = not self.whiteToMove # Đổi lượt đi của người chơi
+        #Cập nhật vị trí Vua khi thực hiện nước cờ
+        if move.pieceMoved == "wK":
+            self.whiteKingLocation = (move.endRow, move.endCol)
+        elif move.pieceMoved == "bK":
+            self.blackKingLocation = (move.endRow, move.endCol)
 
     """
     Đánh lại nước cờ cuối (undo)
@@ -45,14 +54,63 @@ class GameState():
             self.board[move.startRow][move.startCol] = move.pieceMoved
             self.board[move.endRow][move.endCol] = move.pieceCapture
             self.whiteToMove = not self.whiteToMove #Đổi lại lượt
+            # Cập nhật vị trí Vua khi cần
+            if move.pieceMoved == "wK":
+                self.whiteKingLocation = (move.startRow, move.startCol)
+            elif move.pieceMoved == "bK":
+                self.blackKingLocation = (move.startRow, move.startCol)
 
     """
     Các nước đi hợp lệ
     """
 
     def getValidMoves(self):
-        return self.getAllPossibleMoves()
+        #1. Generate tất cả các nước cờ hợp lệ
+        moves = self.getAllPossibleMoves()
+        #2. Với tùng nước cờ, thực thi chúng
+        for i in range(len(moves)-1, -1, -1): #Khi remove khỏi list, thì check lại list
+            self.makeMove(moves[i])
 
+            #3. generate tất cả các nước cờ của đối thủ
+
+            #4. Với từng nước cờ của họ
+            self.whiteToMove = not self.whiteToMove
+            if self.inCheck():
+                moves.remove(moves[i])
+            #5. Nếu họ có thể ăn vua, thì nước cờ của mình không hợp lệ
+            self.whiteToMove = not self.whiteToMove
+            self.undoMove()
+        if len(moves) == 0: #Chiếu tướng và chiếu bí
+            if self.inCheck():
+                self.checkMate = True
+            else:
+                self.staleMate = True
+        else:
+            self.checkMate = False
+            self.staleMate = False
+
+        return moves
+    """
+    Xác định xem có đang bị chiếu tướng không
+    """
+    def inCheck(self):
+        if self.whiteToMove:
+            return self.squareUnderAttack(self.whiteKingLocation[0], self.whiteKingLocation[1])
+        else:
+            return self.squareUnderAttack(self.blackKingLocation[0], self.blackKingLocation[1])
+
+
+    """
+    Xác định nếu đối thủ có thể tần công vào ô cờ nào đó
+    """
+    def squareUnderAttack(self, r, c):
+        self.whiteToMove = not self.whiteToMove #Đổi lượt
+        oppMoves = self.getAllPossibleMoves()
+        self.whiteToMove = not self.whiteToMove  # Đổi lượt lại
+        for move in oppMoves:
+            if move.endRow == r and move.endCol == c: #Ô đang bị tấn công
+                return True
+        return False
 
     """
     Các nước có thể đi
