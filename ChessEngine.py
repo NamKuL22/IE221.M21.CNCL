@@ -24,8 +24,8 @@ class GameState():
         self.moveLog = []
         self.whiteKingLocation = (7, 4)
         self.blackKingLocation = (0, 4)
-        self.checkMate = False
-        self.staleMate = False
+        self.checkmate = False
+        self.stalemate = False
         self.enpassantPossible = () #Điều kiện ô cờ để thực hiện bắt tốt qua đường
         self.currentCastlingRight = CastleRights(True, True, True, True)
         self.castleRightsLog = [CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
@@ -184,9 +184,9 @@ class GameState():
             self.undoMove()
         if len(moves) == 0: #Chiếu tướng và chiếu bí
             if self.inCheck():
-                self.checkMate = True
+                self.checkmate = True
             else:
-                self.staleMate = True
+                self.stalemate = True
 
         self.enpassantPossible = tempEnpassantPossible
         self.currentCastlingRight = tempCastleRights
@@ -361,7 +361,7 @@ class GameState():
                 moves.append(Move((r,c), (r, c+2), self.board, isCastleMove = True))
 
     def getQueensideCastleMoves(self, r, c, moves):
-        if self.board[r][c-1] == '--' and self.board[r][c-2] == '--' and self.board[r][c-3]:
+        if self.board[r][c-1] == '--' and self.board[r][c-2] == '--' and self.board[r][c-3] == '--':
             if not self.squareUnderAttack(r, c-1) and not self.squareUnderAttack(r, c-2):
                 moves.append(Move((r,c), (r, c-2), self.board, isCastleMove = True))
 
@@ -371,8 +371,6 @@ class CastleRights():
         self.bks = bks
         self.wqs = wqs
         self.bqs = bqs
-
-
 
 class Move():
     """
