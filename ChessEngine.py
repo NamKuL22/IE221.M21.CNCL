@@ -27,6 +27,7 @@ class GameState():
         self.checkmate = False
         self.stalemate = False
         self.enpassantPossible = () #Điều kiện ô cờ để thực hiện bắt tốt qua đường
+        self.enpassantPossibleLog = [self.enpassantPossible]
         self.currentCastlingRight = CastleRights(True, True, True, True)
         self.castleRightsLog = [CastleRights(self.currentCastlingRight.wks, self.currentCastlingRight.bks,
                                              self.currentCastlingRight.wqs, self.currentCastlingRight.bqs)]
@@ -72,6 +73,7 @@ class GameState():
                 self.board[move.endRow][move.endCol + 1] = self.board[move.endRow][move.endCol - 2] #Di chuyển xe
                 self.board[move.endRow][move.endCol - 2] = '--' #Xóa xe ở vị trí cũ
 
+        self.enpassantPossibleLog.append(self.enpassantPossible)
 
         #Cập nhật biến castlingRights - bất cứ lúc nào Xe hoặc Vua di chuyển
         self.updateCastleRights(move)
@@ -99,10 +101,9 @@ class GameState():
             if move.isEnpassantMove:
                 self.board[move.endRow][move.endCol] = '--' #Rời ô trống đang đứng
                 self.board[move.startRow][move.endCol] = move.pieceCaptured
-                self.enpassantPossible = (move.endRow, move.endCol)
-            #undo tốt tiến 2 bước
-            if move.pieceMoved[1] == 'p' and abs(move.startRow - move.endRow) == 2:
-                self.enpassantPossible = ()
+
+            self.enpassantPossibleLog.pop()
+            self.enpassantPossible = self.enpassantPossibleLog[-1]
 
             #undo quyền nhập thành:
             self.castleRightsLog.pop() #Loại bỏ quyền nhập thành
@@ -117,6 +118,8 @@ class GameState():
                     self.board[move.endRow][move.endCol-2] = self.board[move.endRow][move.endCol+1]
                     self.board[move.endRow][move.endCol+1] ='--'
 
+            self.checkmate = False
+            self.stalemate = False
     """
     Update Castle Rights
     """
