@@ -79,6 +79,16 @@ def main():
                     playerClicks = []
                     moveMade = False
                     animate = False
+                    selectGameMode = False
+                    pg.display.set_caption('Cờ Vua (Bấm 1 để đánh với máy | Bấm 2 để chơi với người)')
+                    if e.key == pg.K_1 and not selectGameMode:  # Chơi với máy
+                        playerTwo = False
+                        selectGameMode = True
+                        pg.display.set_caption('Cờ Vua (chơi với máy)')
+                    if e.key == pg.K_2 and not selectGameMode:  # Chơi với người
+                        playerTwo = True
+                        selectGameMode = True
+                        pg.display.set_caption('Cờ Vua (chơi 2 người)')
                 if e.key == pg.K_1 and not selectGameMode: #Chơi với máy
                     playerTwo = False
                     selectGameMode = True
